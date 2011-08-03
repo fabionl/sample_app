@@ -221,6 +221,34 @@ git push                         >>> Manda pro GitHub
 
 >>>>>>> Copiei o blueprint CSS/blueprint/ para o public/stylesheets
 
+***** Chapter 5 agora - Trabalhando no Layout
 
+git checkout -b filling-in-layout     >>>> Criando um branch
 
+>>>> Acrescentei uma estrutura básica no html do layout
+>>>> Acrescentei os css's e passei parte da estrutura para partials.
+
+>>>>> Hora dos Integration Tests  (requests specs)
+rails generate integration_test layout_links
+
+>>>> Escrevi os integrations tests no arquivo geram, apareceram os erros.
+vi spec/requests/layout_links_spec.rb  >>>>>>>>>>> Um Exemplo:
+  it "should have a Home page at '/'" do
+    get '/'
+    response.should have_selector('title', :content => 'Home')
+  end
+<<<<<<<<
+
+>>> O tutotial indica o que fazer caso o autotest não execute os Integration Tests, no meu caso funcionou.
+
+vi routes.rb  >>>>>>>>>>>>>
+  match '/contact', :to => 'pages#contact'
+  match '/about',   :to => 'pages#about'
+  match '/help',    :to => 'pages#help'
+  
+  root :to => 'pages#home'
+<<<<<<<<<<<
+
+git rm public/index.html
+git commit -m "Removed default Rails page"
 
