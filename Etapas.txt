@@ -1,0 +1,226 @@
+Retirado de: Ruby on Rails Tutorial - Learn Rails by Example
+
+rails new demo_app
+cd demo_app
+
+vi Gemfile  >>>>>
+gem 'rails', '3.0.9'
+gem 'sqlite3', '1.3.3'
+<<<<<
+bundle install
+
+git init
+git add .
+git commit -m "Initial commit"
+
+GitHub  >>>>>
+Criei um novo repositório.
+<<<<<
+git config --global user.name "Fabio Lima"
+git config --global user.mail fabionl@gmail.com
+touch README 
+git remote add origin git@github.com:fabionl/demo_app.git
+git push -u origin master
+>>>>>>>>
+No meu caso deu problema e tive de seguir a orientação no github para configurar o ssh.
+<<<<<<<<<
+
+rails generate scaffold User name:string email:string
+bundle exec rake db:migrate    >>>>>>
+Testei a versão rake utilizado pelo bundle e o padrao do sistema e eram iguais.
+a partir de agora, passo a usar o rake diretamente.
+<<<<<
+rails s
+Browser: localhost:3000  >>>>>>
+Abriu a página inicial do Rails.
+<<<<<<<
+rake -T db    >>>>>
+Comando do db disponíveis.
+<<<<<
+rake -T    >>>>>>
+Comandos disponíveis.
+<<<<<
+
+>>>>>>>
+Criei alguns users.
+<<<<<<<
+
+rails generate scaffold Micropost content:string user_id:integer
+rake db:migrate
+
+>>>>>>>
+Fazendo as alterações aos models.
+<<<<<<<
+
+git add .
+git commit -a -m "Done with the demo app"
+git push
+
+
+
+****************************************************************************
+****************************************************************************
+****************************************************************************
+
+*****===> 2011/08/02
+
+rails new sample_app -T       >>>>>>>>  -T serve para não gerar o test directory
+cd sample_app
+
+vi Gemfile     >>>>>>>>
+gem 'sqlite3', '1.3.3'
+
+group :development do
+  gem 'rspec-rails', '2.6.1'
+end
+
+group :test do
+  gem 'rspec-rails', '2.6.1'
+  gem 'webrat', '0.7.1'
+end
+<<<<<<<<<
+bundle install
+rails generate rspec:install
+
+git init
+git add .
+git commit -m "Initial commit"
+
+vi README   >>>>>>>>>>
+    Substituição do Texto para uma descrição do Aplicativo, usando markdown.
+<<<<<<<<
+git mv README README.markdown
+git commit -a -m "Improved the README"
+
+git remote add origin git@github.com:fabionl/sample_app.git
+git push origin master
+
+git checkout -b static-pages    >>>>>> Criando um novo Topic Branch. A partir daqui o git tá focando nesse Topic Branch
+
+rails generate controller Pages home contact
+browser localhost:3000/pages/home    >>>>>>>>>
+Apresentou uma página "place holder" da view.
+<<<<<<<<<
+
+git add .
+git commit -m "Added a Pages controller"
+
+
+
+*****===> 2011/08/03
+
+vi Gemfile  >>>>>>>> Tentando autotest.
+group :development, :test do
+  gem 'autotest', '>= 4.4.6'
+  gem 'autotest-rails-pure', '>= 4.1.2'
+end
+<<<<<<<<<<<<<
+bundle install
+
+vi Gemfile  >>>>>>>> Tentando autotest.
+group :development, :test do
+  # Especifico para o MacOSX
+  gem 'autotest-fsevent', '>= 0.2.4'
+  gem 'autotest-growl', '>= 0.2.9'
+end
+<<<<<<<<<<<<<
+bundle install
+
+vi .autotest     >>>>>>>>
+require 'autotest-growl'
+require 'autotest-fsevent'
+<<<<<<<<<
+git rm -r spec/views
+git rm -r spec/helpers
+
+rspec spec/     >>>>>  Executando os testes:
+Pode-se usar outras opções:
+rspec spec/controllers
+rspec spec/controllers/pages_controller_spec.rb
+<<<<<
+autotest >>>>>>>>>>>>
+No meu caso, deu uma mensagem de erro.
+Rodei:
+gem update --system
+
+Isso resolveu o problema.
+<<<<<<<<<<<<
+
+vi Gemfile    >>>>>>>>  Instalando o Spork agora (aumentando velocidade dos testes)
+group :test do
+  gem 'spork', '>= 0.9.0.rc8'
+end
+<<<<<<<<
+bundle exec spork --bootstrap
+vi spec/spec_helper.rb    >>>>>>>>>>
+Copiei todo o conteúdo do final do arquivo para dentro de:
+Spork.prefork
+<<<<<<<<<
+
+time rspec spec/         >>>>>>>
+Medidas de Tempo sem o Spork
+<<<<<<
+bundle exec spork
+time rspec --drb spec/   >>>>>>>
+Muito mais rápido agora. Tudo funcionando.
+<<<<<<
+vi .rspec    >>>>>>>>  Fazendo o rspec usar o spork by default.
+--color
+--drb
+<<<<<<<<<
+time rspec spec/    >>>>>>>  Funcionando!
+
+>>>>> Agora mantenho 2 janelas terminal abertas, uma com spork e outra com autotest.
+
+
+>>>>>>>>>  Fazendo um test que vai falhar.
+vi spec/controllers/pages_controller_spec.rb    >>>>>>>>>
+# O render_views, faz testar as views e não só os controllers.
+describe PagesController do
+  render_views
+
+  describe "GET 'about'" do
+    it "should be successful" do
+      get 'about'
+      response.should be_success
+    end
+  end
+end
+<<<<<<
+>>>>>>>>>>>>>  OBS:
+Importante notar que ao modificar views, precisa-se 'tocar' no controller para causar o autotest.
+É preciso abrir o arquivo do controller e salvá-lo novamente.
+<<<<<<<<<<<<<
+
+>>>
+Editei page_controller.rb para incluir def about.
+Editei routes.rb para incluir get "pages/about"
+Editei about.html.erb para incluir uma view simples.
+<<<
+Browser localhost:3000/pages/about
+
+>>>>>>>>>>>>>>>>>>> Alterando os Titulos
+
+>>>>
+Page      URL             Base Title   Variable Title
+=======================================================
+Home     /pages/home      Sample App      | Home
+Contact  /pages/contact   Sample App      | Contact
+About    /pages/about     Sample App      | About
+<<<<
+
+vi pages_controler_spec.rb
+vi application.html.erb
+
+git add .     >>>>>>> Tudo ok. Git neles
+git commit -m "Done with static pages"
+
+git checkout master              >>> Mudando para o master branch
+git merge static-pages           >>> Fazendo o merge do static-pages para o master branch
+git push                         >>> Manda pro GitHub
+
+>>>>>>> Copiei o blueprint CSS/blueprint/ para o public/stylesheets
+
+
+
+
