@@ -252,3 +252,15 @@ vi routes.rb  >>>>>>>>>>>>>
 git rm public/index.html
 git commit -m "Removed default Rails page"
 
+>>>>>> Alterei os links nos layouts (header, footer, etc). Usando sempre o link_to e apontando para os atalhos criados (contact_path, about_path, root_path, etc)
+
+>>>> Criando o Sign up
+rails generate controller Users new
+rm -rf spec/views
+rm -rf spec/helpers
+
+vi users_controller_spec.rb
+
+
+
+
