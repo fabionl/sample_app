@@ -221,6 +221,8 @@ git push                         >>> Manda pro GitHub
 
 >>>>>>> Copiei o blueprint CSS/blueprint/ para o public/stylesheets
 
+
+
 ***** Chapter 5 agora - Trabalhando no Layout
 
 git checkout -b filling-in-layout     >>>> Criando um branch
@@ -263,4 +265,171 @@ vi users_controller_spec.rb
 
 
 
+*****===> 2011/08/04
+
+>>> Criando o Signup.
+vi users_controller_spec.rb >>>>>>>>> Criando o Spec do Signup
+	it "should have the right title" do
+	  get 'new'
+	  response.should have_selector("title", :content => "Sign up")
+	end
+<<<<<<<<  RED
+vi users_controller.rb  >>>>>>>>
+  def new
+    @title = "Sign up"
+  end
+<<<<<<<<  GREEN
+vi layout_links_spec.rb   >>>>>>>> Criando o Integration Test
+describe "LayoutLinks" do
+  it "should have a signup page at '/signup'" do
+    get '/signup'
+    response.should have_selector('title', :content => "Sign up")
+  end
+end
+<<<<<<<  RED
+vi routes.rb     >>>>>>>>>>   Acrescentando a rota para o signup
+  match '/signup',  :to => 'users#new'
+<<<<<<<<<<  GREEN
+vi pages/home.html.erb    >>>>>> Adicionando o link para o signup.
+<%= link_to "Sign up now!", signup_path, :class => "signup_button round" %>
+<<<<<<<<<<
+>>>>>>>> Fazendo o commit e o merge no git.
+rspec spec/          >>>>  GREEN
+git add .
+git commit -m "Finished layout and routes"
+git checkout master
+git merge filling-in-layout
+git push       >>>> GitHub
+
+git checkout -b exercises_5_5    >>>>>>>  Criando um Branch para os Exerc√≠cios (5.5) do tutorial
+
+vi _header.html.erb     >>>>>  tirei a defini√ß√£o da logo (img)
+vi application_helper.rb   >>>>>>
+  def logo
+    image_tag("logo.png", :alt => "Sample App", :class => "round")
+  end
+<<<<<
+vi layout_links_spec.rb    >>>>>> Tests dos links.
+  it "should have the right links on the layout" do
+    visit root_path
+    click_link "About"
+    response.should have_selector('title', :content => "About")
+    click_link "Help"
+    response.should have_selector('title', :content => "Help")
+    click_link "Contact"
+    response.should have_selector('title', :content => "Contact")
+    click_link "Home"
+    response.should have_selector('title', :content => "Home")
+    click_link "Sign up now!"
+    response.should have_selector('title', :content => "Sign up")
+  end
+<<<<<<<   GREEN
+
+rspec spec/     >>>> GREEN
+git add .
+git commit -m "Terminados os Exercicios (5.5) do tutorial. criando helper pra logo e testando os links das p√°ginas"
+git checkout master
+git merge exercises_5_5
+git push     >>>> GitHub
+
+
+>>>>>>>  Capitulo 6. - Modeling and viewing users, part I
+git checkout master
+git checkout -b modeling-users    >>> Criando o Branch
+
+rails generate model User name:string email:string
+rake db:migrate
+
+vi Gemfile    >>>>>>  Adicionando o GEM Annotate -> Annotates Models
+group :development do
+  gem 'annotate', '>= 2.4.0'
+end
+<<<<<<
+bundle install
+
+>>>>>  No meu caso, o comando 'annotate' deu um problema. rodei 'gem update' (sem --system), mas nao funcionou, vou ficar com o comando do tutorial mesmo, por enquanto.
+bundle exec annotate --position before     >>> Executando o annotate.
+
+vi user.rb    >>>>>>  Definindo os atributos acess√≠veis ao usu√°rio.
+  attr_accessible :name, :email
+<<<<<
+
+bundle exec rake db:test:prepare     >>>> Garantindo que o db de test está atualizado.
+
+vi user.rb    >>> Escrevendo o validation 
+  # validates :name, :presence => true
+<<<
+vi user_spec.rb   >>> Escrevendo o test para a validação, deixando o test do name como pending
+describe User do
+  #pending "add some examples to (or delete) #{__FILE__}"
+  
+  before(:each) do
+    @attr = { :name => 'Example User', :email => 'user@example.com' }
+  end
+
+  it "should create a new instance given valid attributes" do
+    User.create!(@attr)
+  end
+
+  it "should require a name"
+
+end
+<<<  1 PENDING
+
+vi user_spec.rb    >>>> Escrevendo o test da validação agora.
+  it "should require a name" do
+    no_name_user = User.new( @attr.merge(:name => '') )
+    no_name_user.should_not be_valid
+  end
+<<<<<   RED
+
+vi user_spec.rb   >>>> Escrevi um test equivalente para o email.
+vi user.rb   >>> Escrevendo a validação
+   validates :name, :presence => true
+   validates :email, :presence => true
+<<<   GREEN
+
+vi user_spec.rb  >>>> Test de validação do tamanho do nome
+  it "should reject names that are too long" do
+    long_name = 'a' * 51
+    long_name_user = User.new( @attr.merge(:name => long_name) )
+    long_name_user.should_not be_valid
+  end
+<<<<  RED
+vi user.rb  >>>> Fiz a validação do tamanho do campo
+<<<<  GREEN
+vi user_spec.rb  >>>> Fiz o Teste da validação do email
+<<<<  RED
+vi user.rb  >>>> Fiz a validação do email
+<<<<  GREEN
+>>>>  Fiz os teste para garantir uniqueness no email. (case sensitive - 2 testes)
+<<< RED
+>>>>  Fiz a validação de uniqueness do email.
+<<< GREEN
+
+
+
+*****===> 2011/08/05
+
+>>>>>  Alterando o DB para garantir o Uniqueness
+rails generate migration add_email_uniqueness_index
+rake db:migrate
+
+vi application_html.erb    >>>> Incluindo Informações de Debug no Layout
+    <%= debug(params) if Rails.env.development? %>
+<<<<
+>>>>>>>>>  Inclui um cliente de exemplo.
+vi users_controller.rb   >>>>>>  Incluindo o metodo show.
+  def show
+    @user = User.find( params[:id] )
+  end
+<<<<<<<
+vi show.html.erb       >>>>>>  Incluindo a view para mostrar o cliente.
+<<<<<
+vi routes.rb      >>>>>>   Acrescentando REST para users.
+  resources :users   #> Retirar get 'users/new'
+<<<<<<
+
+git add .
+git commit -m "Finished first cut of the User model"
 
