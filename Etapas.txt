@@ -682,6 +682,193 @@ vi show.html.erb    >>>>  Adding a sidebar to the user show view
 vi custom.css    >>>> CSS styling the user show page
 
 git branch     >>> Verificando se estamos no branch correto.
+git add .
+git commit -m "User model with passwords, and user show page"
+git checkout master
+git merge modeling-users
+git push     >>> GitHub
+
+
+>>>>>>>>> Capitulo 8 - Sign up
+
+bundle exec rake db:reset     >>> ou 'rake db:reset'   tanto faz.
+
+git checkout master
+git checkout -b signing-up
+
+vi new.html.erb     >>>  Criando o form de signup
+  .
+  .
+  .
+  # Tudo normal até esses 2 campos.
+  <div class='field'>
+    <%= f.label :password %><br/>
+    <%= f.password_field :password %>
+  </div>
+  <div class='field'>
+    <%= f.label :password_confirmation, 'Confirmation' %><br/>
+    <%= f.password_field :password_confirmation %>
+  </div>
+  .
+  .
+  .
+<<<
+vi users_controller.rb    >>>> Adicionando @user à action new
+  def new
+    @user = User.new
+<<<
+vi custom.css     >>>   Styling o Form
+div.field, div.actions {
+  margin-bottom: 10px;
+}
+<<<<
+vi users_controller_spec.rb     >>>>>
+  describe "POST 'create'" do
+    describe 'failure' do
+      before(:each) do
+        @attr = { :name => '', :email => '', :password => '', :password_confirmation => '' }
+      end
+      it 'should not create a user' do
+        lambda do
+          post :create, :user => @attr
+        end.should_not change(User, :count)
+      end
+      it 'should have the right title' do
+        post :create, :user => @attr
+        response.should have_selector('title', :content => 'Sign up')
+      end
+      it "should render the 'new' page" do
+        post :create, :user => @attr
+        response.should render_template('new')
+      end
+    end
+  end
+<<<<  RED (3)
+vi users_controller.rb    >>> Acrescentando o metodo create   def create
+    @user = User.new( params[:user] )
+    if @user.save
+      # Handle a successful save.
+    else
+      @title = 'Sign up'
+      render 'new'
+    end
+  end
+<<<  GREEN
+vi new.html.erb   >>> Acrescentando os erros ao form
+<%= form_for(@user) do |f| %>
+  <%= render 'shared/error_messages' %>
+<<<
+vi shared/_error_messages.html.erb   >>> Partial para mostrar os error messages
+<% if @user.errors.any? %>
+  <div id='error_explanation'>
+    <h2><%= pluralize(@user.errors.count, 'error') %> prohibited this user from being saved:</h2>
+    <p>There were problems with the following fields:</p>
+    <ul>
+    <% @user.errors.full_messages.each do |msg| %>
+      <li><%= msg %></li>
+    <% end %>
+    </ul>
+  </div>
+<% end %>
+<<<
+
+
+
+*****===> 2011/08/06
+
+vi custom.css   >>> Styling as error messages
+
+>>>>  OBS: em config/application.rb, pode-se usar config.fileter_parameters += [:password, etc] para filtrar dados que não devem ser copiados para os logs. Exemplo, nesse caso, são os campos :password.
+<<<<
+
+vi users_controller_spec.rb   >>>> Tests for signup success
+    describe 'success' do
+      before(:each) do
+        @attr = { :name => 'New User', :email => 'user@example.com',
+                  :password => 'foobar', :password_confirmation => 'foobar' }
+      end
+      it 'should create a user' do
+        lambda do
+          post :create, :user => @attr
+        end.should change(User, :count).by(1)
+      end
+      it 'should redirect to the user show page' do
+        post :create, :user => @attr
+        response.should redirect_to( user_path(assigns(:user)) )
+      end
+    end
+<<<<  RED (2)
+vi users_controller.rb    >>> alterando a create action
+    if @user.save
+      redirect_to @user
+<<<  GREEN
+vi application.html.erb  >>>  Acrescentando as msgs flash
+    <%= render 'layouts/header' %>
+    <section class="round">
+      <%= flash.each do |key, value| %>
+        <div class="flash <%= key %>"><%= value %></div>
+      <% end %>
+<<<
+vi users_controller_spec.rb    >>>  Testando a flash message on successful user signup.
+      it 'should have a welcome message'do
+        post :create, :user => @attr
+        flash[:success].should =~ /welcome to the sample app/i
+      end
+<<<  RED
+vi users_controller.rb    >>>  adicionando a flash message to ao user signup
+    if @user.save
+      flash[:success] = 'Welcome to the Sample App!'
+<<<   GREEN
+
+>>>>   8.4 RSpec integration tests
+rails generate integration_test users
+
+vi users_spec.rb   >>>>   Testing signup failure
+describe "Users" do
+  describe 'signup' do
+    describe 'failure' do
+      it 'should not make a new user' do
+        lambda do
+          visit signup_path
+          fill_in 'Name',         :with => ''
+          fill_in 'Email',        :with => ''
+          fill_in 'Password',     :with => ''
+          fill_in 'Confirmation', :with => ''
+          click_button
+          response.should render_template('users/new')
+          response.should have_selector('div#error_explanation')
+        end.should_not change(User, :count)
+      end
+    end
+  end
+<<<<   GREEN
+
+
+
+*****===> 2011/08/07
+
+vi users_spec.rb   >>>>  Testing signup success
+    describe 'success' do
+      it 'should make a new user' do
+        lambda do
+          visit signup_path
+          fill_in "Name",         :with => 'Example User'
+          fill_in "Email",        :with => 'user@example.com'
+          fill_in "Password",     :with => 'foobar'
+          fill_in "Confirmation", :with => 'foobar'
+          click_button
+          response.should have_selector('div.flash.success', :content => 'Welcome')
+          response.should render_template('users/show')
+        end.should change(User, :count).by(1)
+      end
+<<<<   GREEN
+
+git add .
+git commit -m 'User signup complete'
+git checkout master
+git merge signing-up
+
+
 
 
 
