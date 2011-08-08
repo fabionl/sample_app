@@ -869,6 +869,287 @@ git checkout master
 git merge signing-up
 
 
+>>>>>>>>> Capitulo 9 - Sign in, sign out
+
+git checkout -b sign-in-out   >>> Abrindo o branch para o capitulo.
+
+rails generate controller Sessions new     >>> Criando o controller Sessions
+rm -rf spec/views
+rm -rf spec/helpers
+
+vi sessions_controller_spec.rb    >>>  Tests the new session action and view.
+describe SessionsController do
+  render_views
+   .
+   .
+   .
+    it 'should have the right title' do
+      get :new
+      response.should have_selector( 'title', :content => 'Sign in' )
+    end
+  end
+<<<   RED
+vi routes.rb   >>>  Adicionando as rotas para o session
+  resources :sessions, :only => [:new, :create, :destroy]
+  match '/signin',  :to => 'sessions#new'
+  match '/signout',  :to => 'sessions#destroy'
+<<<  RED
+vi sessions_controller.rb   >>>>    Adicionando o title ao signin page
+  def new
+    @title = 'Sign in'
+  end
+  def create
+  end
+  def destroy
+  end
+<<<<   GREEN
+vi sessions/new.html.erb   >>>>  Adicionando o form pro signin
+<h1>Sign in</h1>
+
+<%= form_for( :session, :url => sessions_path ) do |f| %>
+  <div class='field'>
+    <%= f.label :email %> <br/>
+    <%= f.text_field :email %>
+  </div>
+  <div class='field'>
+    <%= f.label :password %> <br/>
+    <%= f.password_field :password %>
+  </div>
+  <div class='actions'>
+    <%= f.submit 'Sign in' %>
+  </div>
+<% end %>
+
+<p>New user? <%= link_to 'Sign up now!', signup_path %></p>
+<<<<
+vi sessions_controller.rb   >>> Versao inicial do create action
+  def create
+    render 'new'
+  end
+<<<
+vi session_controller_spec.rb   >>>> Tests for a failed signin attempt
+  describe "POST 'create'" do
+    describe 'invalid signin' do
+      before(:each) do
+        @attr = { :email => 'email@example.com', :password => 'invalid' }
+      end
+      it 'should re-render the new page' do
+        post :create, :session => @attr
+        response.should render_template('new')
+      end
+      it 'should have the right title' do
+        post :create, :sesson => @attr
+        response.should have_selector('title', :content => 'Sign in')
+      end
+      it 'should have a flash.now message' do
+        post :create, :session => @attr
+        flash.now[:error].should =~ /invalid/i
+      end
+    end
+  end
+<<<<  RED (2)
+vi sessions_controller.rb    >>>   Code for failed signin attempt, and preparing the sign_in success
+  def create
+    user = User.authenticate( params[:session][:email],
+                              params[:session][:password] )
+    if user.nil?
+      flash.now[:error] = 'Invalid email/password combination.'
+      @title = 'Sign in'
+      render 'new'
+    else
+      sign_in user
+      redirect_to user
+    end
+  end
+<<<   GREEN
+vi session_controller_spec.rb  >>>  Pending tests for user signin
+	describe 'with valid email and password' do
+	  before(:each) do
+		@user = Factory(:user)
+		@attr = {:email => @user.email, :password => @user.password }
+	  end
+	  it 'should sign the user in' do
+		post :create, :session => @attr
+		# Fill in with tets for a signed-in user.
+	  end
+	  it 'should redirect to the user show page' do
+		post :create, :session => @attr
+		response.should redirect_to( user_path(@user) )
+	  end
+	end
+<<<   RED (2)
+vi application_controller.rb   >>>   Including the Sessions helper module into the application controller.
+  include SessionsHelper
+<<<
+vi sessions_helper.rb    >>> Criando a função sign_in  (ainda não funciona)
+  def sign_in(user)
+    cookies.permanent.signed[:remember_token] = [user.id, user.salt]
+    self.current_user = user
+  end
+<<<
+vi sessions_controller_spec.rb    >>> Filling in the test for signing the user in.
+	  it 'should sign the user in' do
+		post :create, :session => @attr
+		controller.current_user.should == @user
+		controller.should be_signed_in
+	  end
+	  it 'should redirect to the user show page' do
+		post :create, :session => @attr
+		response.should redirect_to( user_path(@user) )
+	  end
+<<<   RED (2)    (continua igual ao anterior)
+vi sessions_helper.rb      >>>>  Defining assignment to current_user. finding current user by remember_token
+  def current_user=(user)
+    @current_user = user
+  end
+  def current_user
+    @current_user ||= user_from_remember_token
+  end
+  private
+    def user_from_remember_token
+      User.authenticate_with_salt(*remember_token)     # O mesmo que pegar o hash e usar cada item como variaveis para a função
+    end
+    def remember_token
+      cookies.signed[:remember_token] || [nil, nil]
+    end
+<<<<
+vi user.rb   >>>  Adding an autheticate_with_salt method to the User model.
+  def self.authenticate_with_salt(id, cookie_salt)
+    user = find_by_id(id)
+    (user && user.salt == cookie_salt) ? user : nil
+  end
+<<<   RED (2)
+
+
+
+*****===> 2011/08/08
+
+vi sessions_help.rb    >>>   signed_in? helper method
+  def signed_in?
+    !current_user.nil?
+  end
+<<<   GREEN
+
+>>>>>>>>>>>>>>>>> Signing Out
+
+vi spec_helper.rb    >>>>  função test_sign_in para simular use signin dentro dos testes.
+  RSpec.configure do |config|
+    # Efetuando o signin dentro dos testes.
+    def test_sign_in(user)
+      controller.sign_in(user)
+    end
+  end
+<<<<
+vi sessions_controller_spec.rb   >>>   Testando o sign out
+  describe "DELETE 'destroy'" do
+    it 'should sign a user out' do
+      test_sign_in( Factory(:user) )
+      delete :destroy
+      controller.should_not be_signed_in
+      response.should redirect_to(root_path)
+    end
+  end
+<<<    RED
+vi sessions_controller.rb    >>>  Destroying a sessions (user signout)
+  def destroy
+    sign_out
+    redirect_to root_path
+  end
+<<<
+vi sessions_helper.rb     >>> The sign_out method in the Sessions helper module.
+  def sign_out
+    cookies.delete(:remember_token)
+    self.current_user = nil
+  end
+<<<   GREEN
+vi users_controller_spec.rb   >>> Testing the newly signed-up users are also signed in.
+    describe 'success' do
+      it 'should sign the user in' do
+        post :create, :user => @attr
+        controller.should be_signed_in
+      end
+<<<   RED
+vi users_controller.rb    >>>  Signing in the user upon signup.
+    if @user.save
+      sign_in @user
+<<<    GREEN
+
+vi layout_links_spec.rb    >>>  Tests for the signin/signout links on the site layout.
+  describe "when not signed in" do
+    it 'should have a signin link' do
+      visit root_path
+      response.should have_selector('a', :href => signin_path, :content => 'Sign in')
+    end
+  end
+  describe 'whem signed in' do
+    before(:each) do
+      @user = Factory(:user)
+      visit signin_path
+      fill_in :email,    :with => @user.email
+      fill_in :password, :with => @user.password
+      click_button
+    end
+    it 'should have a signout link' do
+      visit root_path
+      response.should have_selector('a', :href => signout_path, :content => 'Sign out')
+    end
+    it 'should have a profile link'
+  end
+<<<   RED (2) , Pending (1)
+vi _header.html.erb      >>>  Changing the layout links for signed-in users.
+	  <% if signed_in? %>
+        <li><%= link_to 'Sign out', signout_path, :method => :delete %></li> 
+      <% else %>
+	    <li><%= link_to "Sign in", signin_path %></li>
+	  <% end %>
+<<<    Pending (1)
+vi layout_links_spec.rb     >>>  A Test for a profile link.
+    it 'should have a profile link' do
+      visit root_path
+      response.should have_selector('a', :href => user_path(@user), :content => 'Profile')
+    end
+<<<   RED
+vi _header.html.erb     >>>> Adding a profile link.
+	  <li><%= link_to "Home", root_path %></li>
+	  <% if signed_in? %>
+	    <li><%= link_to 'Profile', current_user %></li>
+	  <% end %>
+<<<<    GREEN
+vi users_spec.rb   >>> An Integration test for sgning in and out.
+  describe 'sign in/out' do
+    describe 'failure' do
+      it 'should not sign a user in' do
+        visit signin_path
+        fill_in :email,    :with => ''
+        fill_in :password, :with => ''
+        click_button
+        response.should have_selector('div.flash.error', :content => 'Invalid')
+      end
+    end
+    describe 'success' do
+      it 'should sign a user in and out' do
+        user = Factory(:user)
+        visit signin_path
+        fill_in :email,    :with => user.email
+        fill_in :password, :with => user.password
+        click_button
+        controller.should be_signed_in
+        click_link 'Sign out'
+        controller.should_not be_signed_in
+      end
+    end
+  end
+<<<    GREEN
+
+git add .
+git commit -m 'Done with sign in'
+git checkout master
+git merge sign-in-out
+
+
+
+
+
 
 
 

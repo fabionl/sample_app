@@ -40,6 +40,15 @@ end
 Spork.each_run do
   # This code will be run each time you run your specs.
 
+  RSpec.configure do |config|
+
+    # Efetuando o signin dentro dos testes.
+    def test_sign_in(user)
+      controller.sign_in(user)
+    end
+
+  end
+  
 end
 
 # --- Instructions ---
