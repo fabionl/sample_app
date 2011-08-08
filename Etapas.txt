@@ -1146,7 +1146,37 @@ git commit -m 'Done with sign in'
 git checkout master
 git merge sign-in-out
 
+>>>>>>> Fazendo um refactory to integration test
 
+git checkout sign-in-out   >>> Mudando novamente o branch
+
+vi spec_helper.rb    >>>  a function to sign users in inside of integration tests.
+    def integration_sign_in(user)
+      visit signin_path
+      fill_in :email,    :with => user.email
+      fill_in :password, :with => user.password
+      click_button
+    end
+<<<
+vi users_spec.rb   >>>>
+        integration_sign_in(user)
+        #visit signin_path
+        #fill_in :email,    :with => user.email
+        #fill_in :password, :with => user.password
+        #click_button
+<<<<
+vi layout_links_spec   >>>
+      integration_sign_in(@user)
+      #visit signin_path
+      #fill_in :email,    :with => @user.email
+      #fill_in :password, :with => @user.password
+      #click_button
+<<<
+
+git add .
+git commit -m 'refactory do signin nos integration tests.'
+git checkout master
+git merge sign-in-out
 
 
 
