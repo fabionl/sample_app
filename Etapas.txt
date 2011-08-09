@@ -1179,6 +1179,531 @@ git checkout master
 git merge sign-in-out
 
 
+>>>>>>>>> Capitulo 9 - Sign in, sign out
+
+
+*****===> 2011/08/09
+
+git checkout -b updating-users
+
+vi users_controller_spec.rb    >>> Tests for the user edit action.
+  describe "GET 'edit'" do
+    before(:each) do
+      @user = Factory(:user)
+      test_sign_in(@user)
+    end
+    it 'should be successful' do
+      get :edit, :id => @user
+      response.should be_success
+    end
+    it 'should have the right title' do
+      get :edit, :id => @user
+      response.should have_selector('title', :content => 'Edit user')
+    end
+    it 'should have a link to change the Gravatar' do
+      get :edit, :id => @user
+      gravatar_url = 'http://gravatar.com/emails'
+      response.should have_selector('a', :href => gravatar_url, :content => 'change')
+    end
+  end
+<<<    RED (3)
+vi users_controller.rb    >>>  The user edit action
+  def edit
+    @user = User.find( params[:id] )
+    @title = 'Edit user'
+  end
+<<<
+vi users/edit.html.erb    >>>  The user edit view.
+  <h1>Edit user</h1>
+  <%= form_for(@user) do |f| %>
+	<%= render 'shared/error_messages', :object => f.object %>
+	<div class='field'>
+	  <%= f.label :name %><br/>
+	  <%= f.text_field :name %>
+	</div>
+	.
+	.
+	.
+	<div class='actions'>
+	  <%= f.submit 'Update' %>
+	</div>
+  <% end %>
+  <div>
+	<%= gravatar_for @user %>
+	<a href='http://gravatar.com/emails'>change</a>
+  </div>
+<<<    GREEN
+vi shared/_error_messages.html.erb   >>> Updating the error-messages partial to work with other objs
+<% if object.errors.any? %>
+  <div id='error_explanation'>
+    <h2><%= pluralize(object.errors.count, 'error') %>
+        prohibited this <%= object.class.to_s.underscore.humanize.downcase %>
+        from being saved:</h2>
+    <p>There were problems with the following fields:</p>
+    <ul>
+    <% object.errors.full_messages.each do |msg| %>
+      <li><%= msg %></li>
+    <% end %>
+    </ul>
+  </div>
+<% end %>
+<<<   RED (9)
+vi users/new.html.erb   >>> Updating the rendering of user signup erros.
+<%= form_for(@user) do |f| %>
+  <%= render 'shared/error_messages', :object => f.object %>
+<<<   GREEN
+vi layouts/_header.html.erb    >>> Adding a Settings link.
+	    <li><%= link_to 'Profile', current_user %></li>
+	    <li><%= link_to 'Settings', edit_user_path(current_user) %></li>
+<<<
+
+vi users_controller_spec.rb   >>>  Tests for the user update action.
+  describe "PUT 'update'" do
+    before(:each) do
+      @user = Factory(:user)
+      test_sign_in( @user )
+    end
+    describe 'failure' do
+      before(:each) do
+        @attr = { :email => '', :name => '', :password => '', :password_confirmation => '' }
+      end
+      it "should render the 'edit' page" do
+        put :update, :id => @user, :user => @attr
+        response.should render_template('edit')
+      end
+      it 'should have the right title' do
+        put :update, :id => @user, :user => @attr
+        response.should have_selector( 'title', :content => 'Edit user' )
+      end
+    end
+    describe 'success' do
+      before(:each) do
+        @attr = { :name => 'New Name', :email => 'user@example.org',
+                  :password => 'barbaz', :password_confirmation => 'barbaz' }
+      end
+      it "should change the user's attributes" do
+        put :update, :id => @user, :user => @attr
+        @user.reload
+        @user.name.should == @attr[:name]
+        @user.email.should == @attr[:email]
+      end
+      it "should redirect to the user show page" do
+        put :update, :id => @user, :user => @attr
+        response.should redirect_to( user_path(@user) )
+      end
+      it "should have a flash message" do
+        put :update, :id => @user, :user => @attr
+        flash[:success].should =~ /updated/
+      end
+    end
+  end
+<<<    RED (5)
+vi users_controller.rb    >>>   The user update action
+  def update
+    @user = User.find( params[:id] )
+    if @user.update_attributes( params[:user] )
+      flash[:success] = 'Profile updated.'
+      redirect_to @user
+    else
+      @title = 'Edit user'
+      render 'edit'
+    end
+  end
+<<<    GREEN
+
+
+>>>>>>>>>>>>>>>>  10.2 Protecting Pages
+
+vi users_controller_spec.rb     >>>  The first tests for authentication.
+  describe 'authentication of edit/update pages' do
+    before(:each) do
+      @user = Factory(:user)
+    end
+    describe 'for non-signed-in users' do
+      it "should deny access to 'edit'" do
+        get :edit, :id => @user
+        response.should redirect_to( signin_path )
+      end
+      it "should deny access to 'update'" do
+        put :update, :id => @user, :user => {}
+        response.should redirect_to( signin_path )
+      end
+    end
+  end
+<<<     RED (2)
+vi users_controller.rb     >>>  Adding an authenticate before filter.
+class UsersController < ApplicationController
+  before_filter :authenticate, :only => [:edit, :update]
+  private
+    def authenticate
+      deny_access unless signed_in?
+    end
+<<<     RED (2)
+vi sessions_helper.rb      >>>  The deny_access method for user authentication.
+  def deny_access
+    redirect_to signin_path, :notice => 'Please sign in to access this page.'
+  end
+<<<    GREEN
+
+vi users_controller_spec.rb    >>>  Authentication tests for signed-in users.
+  describe 'authentication of edit/update pages' do
+    describe 'for signed-in users' do
+      before(:each) do
+        wrong_user = Factory(:user, :email => 'user@example.net')
+        test_sign_in( wrong_user )
+      end
+      it "should require matching users for 'edit'" do
+        get :edit, :id => @user
+        response.should redirect_to(root_path)
+      end
+      it "should require matching users for 'update'" do
+        put :update, :id => @user, :user => {}
+        response.should redirect_to(root_path)
+      end
+    end
+<<<    RED (2)
+vi users_controller.rb   >>>  A correct_user before filter to protect the edit/update pages.
+  before_filter :authenticate, :only => [:edit, :update]
+  before_filter :correct_user, :only => [:edit, :update]
+  def edit
+    @title = 'Edit user'
+  end
+  private
+    def correct_user
+      @user = User.find( params[:id] )
+      redirect_to(root_path) unless current_user?(@user)
+    end
+<<<     RED (10)
+vi sessions_helper.rb   >>>  the current_user? method
+  def current_user?(user)
+    user == current_user
+  end
+<<<     GREEN
+vi users_controller.rb   >>> Remove (ou comenta) linha abaixo do update method
+    @user = User.find( params[:id] )
+<<<
+
+
+>>>>>>>>>>  10.2.3 Friendly forwarding
+
+rails generate integration_test friendly_forwarding    >>> Gerando o integratin_test.
+
+vi requests/friendly_forwardings_spec.rb   >>>  An integration test for friendly forwarding
+describe "FriendlyForwardings" do
+  it 'should forward to the requested page after signin' do
+    user = Factory(:user)
+    visit edit_user_path(user)
+    # The test automatically follows the redirect to the signin page.
+    fill_in :email,    :with => user.email
+    fill_in :password, :with => user.password
+    click_button
+    # The test follows the redirect again, this time to users/edit.
+    response.should render_template('users/edit')
+  end
+<<<    RED (1)
+vi sessions_helper.rb   >>>  Code to implement friendly forwarding.
+  def deny_access
+    store_location
+    redirect_to signin_path, :notice => 'Please sign in to access this page.'
+  end
+  def redirect_back_or(default)
+    redirect_to( session[:return_to] || default )
+    clear_return_to
+  end
+  private
+    def store_location
+      session[:return_to] = request.fullpath
+    end
+    def clear_return_to
+      session[:return_to] = nil
+    end
+<<<
+vi sessions_controller.rb    >>>  The Sessions create action with friendly forwarding.
+  def create
+    else
+      sign_in user
+      redirect_back_or user
+<<<    GREEN
+
+
+>>>>>>>   10.3.1 User Index
+
+vi users_controller_spec.rb     >>>  Tests for the user index page.
+  describe "GET 'index'" do
+    describe "for non-signed-in users" do
+      it 'should deny access' do
+        get :index
+        response.should redirect_to(signin_path)
+        flash[:notice].should =~ /sign in/i
+      end
+    end
+    describe "for signed-in users" do
+      before(:each) do
+        @user = test_sign_in( Factory(:user) )
+        second = Factory(:user, :name => 'Bob', :email => 'another@example.com')
+        third  = Factory(:user, :name => 'Ben', :email => 'another@example.net')
+        @users = [ @user, second, third ]
+      end
+      it 'should be successful' do
+        get :index
+        response.should be_success
+      end
+      it 'should have the right title' do
+        get :index
+        response.should have_selector('title', :content => 'All users')
+      end
+      it 'should have an element for each user' do
+        get :index
+        @users.each do |user|
+          response.should have_selector('li', :content => user.name)
+        end
+      end
+<<<     RED (4)
+vi users_controller.rb    >>>  The user index action.
+class UsersController < ApplicationController
+  before_filter :authenticate, :only => [:index, :edit, :update]
+  def index
+    @title = 'All users'
+    @users = User.all
+  end
+<<<    RED (3)
+vi users/index.html.erb   >>>  The user index view.
+<h1>All users</h1>
+<ul class='users'>
+  <% @users.each do |user| %>
+    <li>
+      <%= gravatar_for user, :size => 30 %>
+      <%= link_to user.name, user %>
+    </li>
+  <% end %>
+</ul>
+<<<     GREEN
+vi custom.css    >>>  CSS for the user index.
+ul.users { margin-top: 1em; }
+.users li { list-style: none; }
+<<<
+vi layouts/_header.html.erb   >>>>  A layout link to the user index.
+<<<<
+
+
+>>>>>>>>>>>>  10.3.2 Sample users
+
+vi Gemfile   >>>> Adding the Faker gem.
+group :development do
+  gem 'faker', '>= 0.3.1'
+<<<<
+bundle install
+
+vi lib/tasks/sample_data.rake   >>>  A Rake task for populating the database with sample users.
+namespace :db do
+  desc 'Fill database with sample data'
+  task :populate => :environment do
+    Rake::Task['db:reset'].invoke
+    User.create!(:name => 'Example User',
+                 :email => 'example@railstutorial.org',
+                 :password => 'foobar',
+                 :password_confirmation => 'foobar')
+    99.times do |n|
+      name = Faker::Name.name
+      email = "example-#{n+1}@railstutorial.org"
+      password = 'password'
+      User.create!(:name => name,
+                   :email => email,
+                   :password => password,
+                   :password_confirmation => password)
+    end
+  end
+end
+<<<
+rake db:populate
+
+>>>>>>> 10.3.3 Pagination
+
+vi Gemfile    >>>>  Including will_paginate in the Gemfile
+gem 'gravatar_image_tag', '>= 1.0.0.pre2'
+gem 'will_paginate', '>= 3.0.pre2'
+<<<<
+bundle install
+
+vi users/index.html.erb   >>>  The user index with pagination
+<h1>All users</h1>
+<%= will_paginate %>
+  .
+  .
+  .
+</ul>
+<%= will_paginate %>
+<<<
+vi users_controller.rb   >>>>  Paginating the users in the index action.
+  def index
+    @title = 'All users'
+    #@users = User.all
+    @users = User.paginate( :page => params[:page] )
+  end
+<<<<    Pagination tá funcionando.
+
+>>>>>> Testing Pagination
+
+vi spec/factories.rb   >>> Defining a Factory Girl sequence.
+Factory.sequence :email do |n|
+  "person-#{n}@example.com"
+end<<<
+vi users_controller_spec.rb   >>>  A test for pagination
+  describe "GET 'index'" do
+    describe "for signed-in users" do
+      before(:each) do
+        .
+        .
+        .
+        @users = [ @user, second, third ]
+        30.times do
+          @users << Factory( :user, :email => Factory.next(:email) )
+        end
+      it 'should have an element for each user' do
+        get :index
+        @users[0..2].each do |user|
+          response.should have_selector('li', :content => user.name)
+        end
+      end
+      it 'should paginate users' do
+        get :index
+        response.should have_selector('div.pagination')
+        response.should have_selector('span.disabled', :content => 'Previous')
+        response.should have_selector('a', :href => '/users?page=2',
+                                           :content => '2')
+        response.should have_selector('a', :href => '/users?page=2',
+                                           :content => 'Next')
+      end
+<<<    GREEN
+
+vi users/index.html.erb     >>>  The first Refactoring attempt at the index view.
+  <% @users.each do |user| %>
+    <%= render user %>
+  <% end %>
+<<<    RED (4)
+vi users/_user.html.erb   >>>  A Partial to render a single user
+    <li>
+      <%= gravatar_for user, :size => 30 %>
+      <%= link_to user.name, user %>
+    </li>
+<<<   GREEN
+vi users/index.html.erb   >>> The fully refactored user index.
+<ul class='users'>
+  <%= render @users %>
+</ul>
+<<<    GREEN
+
+
+>>>>>>>>>>>>  10.4 Destroying users
+
+>>>>>> 10.4.1 Administrative users
+
+vi user_spec.rb   >>>  Tests for an admin attribute
+  describe 'admin attribute' do
+    before(:each) do
+      @user = User.create!(@attr)
+    end
+    it 'should respond to admin' do
+      @user.should respond_to(:admin)
+    end
+    it 'should not be an admin by default' do
+      @user.should_not be_admin
+    end
+    it 'should be convertible to an admin' do
+      @user.toggle!(:admin)
+      @user.should be_admin
+    end
+  end
+<<<    RED (3)
+rails generate migration add_admin_to_users admin:boolean
+vi db/migrate/<timestamp>_add_admin_to_users.rb    >>> Alterando o migration para incluir o default
+  def self.up
+    add_column :users, :admin, :boolean, :default => false
+  end
+<<<
+rake db:migrate
+rake db:test:prepare
+
+vi lib/tasks/sample_data.rake      >>>  The sample data populator code with an admin user.
+    admin = User.create!(:name => 'Example User',
+                 :email => 'example@railstutorial.org',
+                 :password => 'foobar',
+                 :password_confirmation => 'foobar')
+    admin.toggle!(:admin)
+<<<    GREEN
+rake db:populate
+
+>>>>>>  OBS: pag. 291, tem uma observação importante sobre attr_accessible. Não colocando :admin em attr_accessble, torna-se impossivel fazer algo como 'put /users/1?admin=1', o que aumenta a segurança. Torna-se necessário usar algo como o metodo toggle! acima.
+
+vi users/_user.html.erb   >>>  User delete links (viewable only by admins)
+  <% if current_user.admin? %>
+  | <%= link_to 'delete', user, :method => :delete, :confirm => 'You sure?',
+                                :title => "Delete #{user.name}" %>
+  <% end %>
+<<<
+vi application.html.erb    >>>  Adding the default JavaScript librearies to the sample app.
+<head>
+  <%= javascript_include_tag :defaults %>
+<<<    Obs: Importante security role, só pode ser permitido deletar por admins.
+vi users_controller_spec.rb    >>> Tests for destroying users.
+  describe "DELETE 'destroy'" do
+    before(:each) do
+      @user = Factory(:user)
+    end
+    describe 'as a non-signed-in user' do
+      it 'should deny access' do
+        delete :destroy, :id => @user
+        response.should redirect_to(signin_path)
+      end
+    end
+    describe 'as a non-admin user' do
+      it 'should protect the page' do
+        test_sign_in(@user)
+        delete :destroy, :id => @user
+        response.should redirect_to(root_path)
+      end
+    end
+    describe 'as an admin user' do
+      before(:each) do
+        admin = Factory( :user, :email => 'admin@example.com', :admin => true)
+        test_sign_in(admin)
+      end
+      it 'should destroy the user' do
+        lambda do
+          delete :destroy, :id => @user
+        end.should change(User, :count).by(-1)
+      end
+      it 'should redirect to the users page' do
+        delete :destroy, :id => @user
+        response.should redirect_to(users_path)
+      end
+    end
+  end
+<<<   RED (4)
+vi users_controller.rb   >>>  A before_filter restricting the destroy action to admins.
+class UsersController < ApplicationController
+  before_filter :authenticate, :only => [:index, :edit, :update, :destroy]
+  before_filter :correct_user, :only => [:edit, :update]
+  before_filter :admin_user,   :only => [:destroy]
+  .
+  .
+  .
+  def destroy
+    User.find(params[:id]).destroy
+    flash[:success] = 'User destroyed.'
+    redirect_to users_path
+  end
+  private
+    def admin_user
+      redirect_to(root_path) unless current_user.admin?
+    end
+<<<   GREEN
+
+git add .
+git commit -m 'Done with user edit/update, index, and destroy actions'
+git checkout master
+git merge updating-users
+
 
 
 

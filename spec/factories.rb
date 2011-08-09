@@ -5,3 +5,9 @@ Factory.define :user do |user|
   user.password               'foobar'
   user.password_confirmation  'foobar'
 end
+
+# Para chamar a sequence basta usar:
+#    Factory( :user, :email => Factory.next(:email) )
+Factory.sequence :email do |n|
+  "person-#{n}@example.com"
+end
